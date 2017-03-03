@@ -56,8 +56,8 @@ public:
     String Substring(int startIndex, int length);
     String ToUpper();
     String ToLower();
-    String Concat(String &str0, String &str1);
-    static  String GetLine();
+    static String Concat(String &str0, String &str1);
+    static String GetLine();
     static String GetLine(FILE *fp);
     static String Copy(String &str);
 
