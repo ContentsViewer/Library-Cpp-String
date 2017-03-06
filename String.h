@@ -27,7 +27,7 @@ public:
     String& operator=(char *rChars);
     String& operator=(const String &rStr);
     String& operator=(String&& rStr);
-    char* operator&() { return GetChars(); }
+    //char* operator&() { return GetChars(); }
     bool operator==(String rStr) { return Equals(rStr); }
     char operator[](int index) { char out = chars[index]; return out; }
 
@@ -41,7 +41,7 @@ public:
     //関数
     //  説明:
     //      string内部の文字列―char配列―の先頭アドレスを返します
-    char* GetChars() { return &(this->chars); }
+    char* CharArray() { return (this->chars.Array()); }
 
     int IndexOf(String &pattern, int startIndex, int count);
     bool Contains(String &value);
@@ -184,7 +184,7 @@ int String::IndexOf(String &pattern, int startIndex, int count)
     }
     for (i = 0; i < pattern.length - 1; i++)
     {
-        skip[(unsigned char)(pattern.GetChars()[i])] = pattern.length - i - 1;
+        skip[(unsigned char)(pattern.CharArray()[i])] = pattern.length - i - 1;
     }
 
     i = startIndex + pattern.length - 1;
@@ -195,7 +195,7 @@ int String::IndexOf(String &pattern, int startIndex, int count)
         j = pattern.length - 1;
 
         //テキストとパターンが一致する間繰り返す
-        while (this->GetChars()[i] == pattern.GetChars()[j])
+        while (this->CharArray()[i] == pattern.CharArray()[j])
         {
             if (j == 0)
             {
@@ -206,7 +206,7 @@ int String::IndexOf(String &pattern, int startIndex, int count)
             j--;
         }
 
-        int a = skip[(unsigned char)(this->GetChars()[i])];
+        int a = skip[(unsigned char)(this->CharArray()[i])];
         int b = pattern.length - j;
 
         i = i + (a > b ? a : b);
@@ -251,7 +251,7 @@ bool String::Equals(String &value)
     int i = 0;
     for (i = 0; i < this->length; i++)
     {
-        if (this->GetChars()[i] != value.GetChars()[i])
+        if (this->CharArray()[i] != value.CharArray()[i])
         {
             return 0;
         }
@@ -286,7 +286,7 @@ String String::Replace(String &oldValue, String &newValue)
             //strの最後まで読み込む
             for (; index < this->length; index++)
             {
-                chars.Add(this->GetChars()[index]);
+                chars.Add(this->CharArray()[index]);
             }
             break;
         }
@@ -295,14 +295,14 @@ String String::Replace(String &oldValue, String &newValue)
             //検索位置までstrを読み込む
             for (; index < startIndex; index++)
             {
-                chars.Add(this->GetChars()[index]);
+                chars.Add(this->CharArray()[index]);
             }
 
             //新しい文字列に置き換える
             int i = 0;
             for (i = 0; i < newValue.length; i++)
             {
-                chars.Add(newValue.GetChars()[i]);
+                chars.Add(newValue.CharArray()[i]);
             }
 
             //古い文字列分str読み取り位置をスキップする
@@ -314,7 +314,7 @@ String String::Replace(String &oldValue, String &newValue)
     //ヌル文字を追加
     chars.Add('\0');
 
-    String newString(&chars);
+    String newString(chars.Array());
     return newString;
 }
 
@@ -380,12 +380,12 @@ List<String> String::Split(List<String> separator)
             //strの最後まで読み込む
             for (; index < this->length; index++)
             {
-                chars.Add(this->GetChars()[index]);
+                chars.Add(this->CharArray()[index]);
             }
             //ヌル文字を追加
             chars.Add('\0');
 
-            String newString(&chars);
+            String newString(chars.Array());
 
             newList.Add(newString);
             break;
@@ -398,13 +398,13 @@ List<String> String::Split(List<String> separator)
             //検索位置までstrを読み込む
             for (; index < startIndex; index++)
             {
-                chars.Add(this->GetChars()[index]);
+                chars.Add(this->CharArray()[index]);
             }
 
             //ヌル文字を追加
             chars.Add('\0');
 
-            String newString(&chars);
+            String newString(chars.Array());
             newList.Add(newString);
 
             //区切り文字列分str読み取り位置をスキップする
@@ -456,13 +456,13 @@ String String::ToUpper()
     int i = 0;
     for (i = 0; i < this->length; i++)
     {
-        chars.Add(ToUpperChar(this->GetChars()[i]));
+        chars.Add(ToUpperChar(this->CharArray()[i]));
     }
 
     //ヌル文字を追加
     chars.Add('\0');
 
-    String newString(&chars);
+    String newString(chars.Array());
     return newString;
 }
 
@@ -478,13 +478,13 @@ String String::ToLower()
     int i = 0;
     for (i = 0; i < this->length; i++)
     {
-        chars.Add(ToLowerChar(this->GetChars()[i]));
+        chars.Add(ToLowerChar(this->CharArray()[i]));
     }
 
     //ヌル文字を追加
     chars.Add('\0');
 
-    String newString(&chars);
+    String newString(chars.Array());
     return newString;
 }
 
@@ -500,18 +500,18 @@ String String::Concat(String &str0, String &str1)
     int i = 0;
     for (i = 0; i < str0.length; i++)
     {
-        chars.Add(str0.GetChars()[i]);
+        chars.Add(str0.CharArray()[i]);
     }
 
     for (i = 0; i < str1.length; i++)
     {
-        chars.Add(str1.GetChars()[i]);
+        chars.Add(str1.CharArray()[i]);
     }
 
     //ヌル文字を追加
     chars.Add('\0');
 
-    String newString(&chars);
+    String newString(chars.Array());
     return newString;
 }
 
@@ -550,7 +550,7 @@ String String::GetLine(FILE *fp)
     //ヌル文字を追加
     chars.Add('\0');
 
-    String str(&chars);
+    String str(chars.Array());
     return str;
 }
 
@@ -561,13 +561,13 @@ String String::Copy(String &str)
     int i = 0;
     for (i = 0; i < str.length; i++)
     {
-        chars.Add(str.GetChars()[i]);
+        chars.Add(str.CharArray()[i]);
     }
 
     //ヌル文字を追加
     chars.Add('\0');
 
-    String newString(&chars);
+    String newString(chars.Array());
 
     return newString;
 }
