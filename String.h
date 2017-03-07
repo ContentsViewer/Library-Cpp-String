@@ -13,10 +13,9 @@ class String
 {
 private:
     List<char> chars;
-    int length = 0;
 
 public:
-    int Length() { return length; }
+    int Length() { return chars.Count() - 1; }
 
     String();
     String(char *chars);
@@ -43,6 +42,8 @@ public:
     //      string内部の文字列―char配列―の先頭アドレスを返します
     char* CharArray() { return (this->chars.Array()); }
 
+    String Insert(int startIndex, String &value);
+    String Insert(int startIndex, char *chars) { return Insert(startIndex, String(chars)); }
     int IndexOf(String &pattern, int startIndex, int count);
     bool Contains(String &value);
     bool Equals(String &value);
@@ -73,14 +74,13 @@ public:
 //デフォルトコンストラクタ
 String::String()
 {
-    length = 0;
     this->chars.Add('\0');
 }
 
 //要素指定コンストラクタ
 String::String(char *chars)
 {
-    length = StringLength(chars);
+    int length = StringLength(chars);
 
     for (int i = 0; i < length; i++)
     {
@@ -110,7 +110,6 @@ String::String(const String &str)
 //ムーブコンストラクタ
 String::String(String&& rStr)
 {
-    length = rStr.length;
     chars = std::move(rStr.chars);
 }
 
@@ -122,7 +121,6 @@ String& String::operator=(const String &rStr)
 }
 String& String::operator=(String&& rStr)
 {
-    length = rStr.length;
     chars = std::move(rStr.chars);
     return *this;
 }
@@ -145,7 +143,7 @@ String& String::operator+=(String &rStr)
     //NULL文字削除
     chars.RemoveAt(chars.Count() - 1);
 
-    for (int i = 0; i < rStr.length; i++)
+    for (int i = 0; i < rStr.Length(); i++)
     {
         chars.Add(rStr[i]);
     }
@@ -156,7 +154,6 @@ String& String::operator+=(String &rStr)
 void String::CopyFrom(const String& from)
 {
     chars.CopyFrom(from.chars);
-    length = from.length;
 }
 
 //
@@ -180,19 +177,19 @@ int String::IndexOf(String &pattern, int startIndex, int count)
     //表skipを作成する
     for (i = 0; i < 256; i++)
     {
-        skip[i] = pattern.length;
+        skip[i] = pattern.Length();
     }
-    for (i = 0; i < pattern.length - 1; i++)
+    for (i = 0; i < pattern.Length() - 1; i++)
     {
-        skip[(unsigned char)(pattern.CharArray()[i])] = pattern.length - i - 1;
+        skip[(unsigned char)(pattern.CharArray()[i])] = pattern.Length() - i - 1;
     }
 
-    i = startIndex + pattern.length - 1;
+    i = startIndex + pattern.Length() - 1;
 
     //テキストの最後尾に行き当たるまで繰り返す
     while (i < startIndex + count)
     {
-        j = pattern.length - 1;
+        j = pattern.Length() - 1;
 
         //テキストとパターンが一致する間繰り返す
         while (this->CharArray()[i] == pattern.CharArray()[j])
@@ -207,12 +204,36 @@ int String::IndexOf(String &pattern, int startIndex, int count)
         }
 
         int a = skip[(unsigned char)(this->CharArray()[i])];
-        int b = pattern.length - j;
+        int b = pattern.Length() - j;
 
         i = i + (a > b ? a : b);
     }
 
     return -1;
+}
+
+String String::Insert(int startIndex, String &value)
+{
+    String str = "";
+
+    //NULL文字削除
+    str.chars.Clear();
+
+    for (int i = 0; i < startIndex; i++)
+    {
+        str.chars.Add(this->chars[i]);
+    }
+    for (int i = 0; i < value.Length(); i++)
+    {
+        str.chars.Add(value.chars[i]);
+    }
+    for (int i = startIndex; i < this->Length(); i++)
+    {
+        str.chars.Add(this->chars[i]);
+    }
+    str.chars.Add('\0');
+
+    return str;
 }
 
 //
@@ -225,7 +246,7 @@ int String::IndexOf(String &pattern, int startIndex, int count)
 //		0: 含まれない
 bool String::Contains(String &value)
 {
-    if (IndexOf(value, 0, this->length) < 0)
+    if (IndexOf(value, 0, this->Length()) < 0)
     {
         return false;
     }
@@ -243,13 +264,13 @@ bool String::Contains(String &value)
 //
 bool String::Equals(String &value)
 {
-    if (this->length != value.length)
+    if (this->Length() != value.Length())
     {
         return false;
     }
 
     int i = 0;
-    for (i = 0; i < this->length; i++)
+    for (i = 0; i < this->Length(); i++)
     {
         if (this->CharArray()[i] != value.CharArray()[i])
         {
@@ -267,7 +288,7 @@ bool String::Equals(String &value)
 //
 String String::Replace(String &oldValue, String &newValue)
 {
-    List<char> chars(this->length + 1);
+    List<char> chars(this->Length() + 1);
 
     //文字列str内でoldValueが存在する先頭位置
     int startIndex = 0;
@@ -278,13 +299,13 @@ String String::Replace(String &oldValue, String &newValue)
     for (;;)
     {
         //oldValueを検索
-        startIndex = this->IndexOf(oldValue, startIndex, this->length - startIndex);
+        startIndex = this->IndexOf(oldValue, startIndex, this->Length() - startIndex);
 
         //存在しないとき
         if (startIndex < 0)
         {
             //strの最後まで読み込む
-            for (; index < this->length; index++)
+            for (; index < this->Length(); index++)
             {
                 chars.Add(this->CharArray()[index]);
             }
@@ -300,13 +321,13 @@ String String::Replace(String &oldValue, String &newValue)
 
             //新しい文字列に置き換える
             int i = 0;
-            for (i = 0; i < newValue.length; i++)
+            for (i = 0; i < newValue.Length(); i++)
             {
                 chars.Add(newValue.CharArray()[i]);
             }
 
             //古い文字列分str読み取り位置をスキップする
-            index += oldValue.length;
+            index += oldValue.Length();
             startIndex = index;
         }
     }
@@ -335,7 +356,7 @@ List<String> String::Split(List<String> separator)
     //文字列strの読み込み位置
     int index = 0;
 
-    while (index < this->length)
+    while (index < this->Length())
     {
         int skip = 0;
 
@@ -345,12 +366,12 @@ List<String> String::Split(List<String> separator)
         int i = 0;
         for (i = 0; i < separator.Count(); i++)
         {
-            int tempIndex = this->IndexOf(separator[i], startIndex, this->length - startIndex);
+            int tempIndex = this->IndexOf(separator[i], startIndex, this->Length() - startIndex);
 
             if (!firstDetected && tempIndex >= 0)
             {
                 nextStartIndex = tempIndex;
-                skip = separator[i].length;
+                skip = separator[i].Length();
                 firstDetected = 1;
             }
 
@@ -358,7 +379,7 @@ List<String> String::Split(List<String> separator)
             if (firstDetected && tempIndex >= 0 && tempIndex < nextStartIndex)
             {
                 nextStartIndex = tempIndex;
-                skip = separator[i].length;
+                skip = separator[i].Length();
             }
         }
 
@@ -375,10 +396,10 @@ List<String> String::Split(List<String> separator)
         if (startIndex < 0)
         {
             //文字リスト作成
-            List<char> chars(this->length - index + 1);
+            List<char> chars(this->Length() - index + 1);
 
             //strの最後まで読み込む
-            for (; index < this->length; index++)
+            for (; index < this->Length(); index++)
             {
                 chars.Add(this->CharArray()[index]);
             }
@@ -412,7 +433,7 @@ List<String> String::Split(List<String> separator)
             startIndex = index;
 
             //文字列の最後尾に区切り文字列があった場合,空文字列をリストに追加する
-            if (index == this->length)
+            if (index == this->Length())
             {
                 String newString("");
                 newList.Add(newString);
@@ -425,7 +446,7 @@ List<String> String::Split(List<String> separator)
 
 String String::Substring(int startIndex, int length)
 {
-    if (startIndex < 0 || startIndex + length > this->length)
+    if (startIndex < 0 || startIndex + length > this->Length())
     {
         throw std::out_of_range("[String.Substring]>> ArgumentOutOfRange");
     }
@@ -441,7 +462,6 @@ String String::Substring(int startIndex, int length)
     }
 
     sub.chars.Add('\0');
-
     return sub;
 }
 //
@@ -451,10 +471,10 @@ String String::Substring(int startIndex, int length)
 //
 String String::ToUpper()
 {
-    List<char> chars(this->length + 1);
+    List<char> chars(this->Length() + 1);
 
     int i = 0;
-    for (i = 0; i < this->length; i++)
+    for (i = 0; i < this->Length(); i++)
     {
         chars.Add(ToUpperChar(this->CharArray()[i]));
     }
@@ -473,10 +493,10 @@ String String::ToUpper()
 //
 String String::ToLower()
 {
-    List<char> chars(this->length + 1);
+    List<char> chars(this->Length() + 1);
 
     int i = 0;
-    for (i = 0; i < this->length; i++)
+    for (i = 0; i < this->Length(); i++)
     {
         chars.Add(ToLowerChar(this->CharArray()[i]));
     }
@@ -495,15 +515,15 @@ String String::ToLower()
 //
 String String::Concat(String &str0, String &str1)
 {
-    List<char> chars(str0.length + str1.length + 1);
+    List<char> chars(str0.Length() + str1.Length() + 1);
 
     int i = 0;
-    for (i = 0; i < str0.length; i++)
+    for (i = 0; i < str0.Length(); i++)
     {
         chars.Add(str0.CharArray()[i]);
     }
 
-    for (i = 0; i < str1.length; i++)
+    for (i = 0; i < str1.Length(); i++)
     {
         chars.Add(str1.CharArray()[i]);
     }
@@ -556,10 +576,10 @@ String String::GetLine(FILE *fp)
 
 String String::Copy(String &str)
 {
-    List<char> chars(str.length + 1);
+    List<char> chars(str.Length() + 1);
 
     int i = 0;
-    for (i = 0; i < str.length; i++)
+    for (i = 0; i < str.Length(); i++)
     {
         chars.Add(str.CharArray()[i]);
     }
