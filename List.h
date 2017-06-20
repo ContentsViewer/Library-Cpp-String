@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_LIST_H_
-#define _INCLUDE_LIST_H_
+#ifndef LIST_H
+#define LIST_H
 
 #include <stdexcept>
 
@@ -10,10 +10,6 @@ private:
     int capacity = 0;
     int count = 0;
 
-    static int Log2(int x);
-    static int Pow2(int x);
-
-    int GetStep(int x);
     int NextCapacity(int targetCount);
 
     void Unallocate(TYPE *array);
@@ -35,13 +31,25 @@ public:
     List& operator=(List&& rList);
 
     //TYPE* operator&() { return array; }
-    TYPE& operator[] (int index);
+
+    //
+    // 参照演算子[]を使用してアイテムにアクセスします.
+    //
+    TYPE& operator[] (int index)
+    {
+        if (index < 0 || index >= count)
+        {
+            throw std::out_of_range("[List.oprator[]] IndexOutOfRange");
+        }
+        return array[index];
+    }
 
     TYPE* Array() { return array; }
     void Add(TYPE item);
-    void Insert(int index, TYPE  item);
+    void Insert(int index, TYPE item);
     int IndexOf(TYPE item);
     int LastIndexOf(TYPE item);
+    bool Contains(TYPE item);
     void CopyTo(int index, TYPE *array, int arrayIndex, int count);
     void RemoveAt(int index);
     bool Remove(TYPE item);
@@ -125,21 +133,19 @@ List<TYPE>& List<TYPE>::operator=(List&& rList)
     return *this;
 }
 
-template <typename TYPE>
-TYPE& List<TYPE>::operator[] (int index)
-{
-    if (index < 0 || index >= count)
-    {
-        throw std::out_of_range("[List.oprator[]]>> IndexOutOfRange");
-    }
-    return array[index];
-}
-
+//
+// コピー元のリストを自身にコピーします
+//
+// @param &from:
+//  コピー元リスト
+//
 template <typename TYPE>
 void List<TYPE>::CopyFrom(const List &from)
 {
     int nextCapacity = NextCapacity(from.capacity);
-    if (nextCapacity > 0)
+
+    if (nextCapacity > capacity)
+    //if (nextCapacity > 0)
     {
         capacity = nextCapacity;
         Unallocate(array);
@@ -163,6 +169,11 @@ void List<TYPE>::MoveFrom(TYPE *from, int size)
     array = from;
 }
 
+
+//
+// Listの容量を設定します.
+// 現在の要素数を下回って設定することはできません.
+//
 template <typename TYPE>
 void List<TYPE>::SetCapacity(int capacity)
 {
@@ -179,11 +190,19 @@ void List<TYPE>::SetCapacity(int capacity)
     this->capacity = capacity;
 }
 
+//
+// Listの末尾に要素を追加します.
+//
+// @param item:
+//  追加するアイテム
+//
 template <typename TYPE>
 void List<TYPE>::Add(TYPE item)
 {
     int nextCapacity = NextCapacity(++count);
-    if (nextCapacity > 0)
+
+    if (nextCapacity > capacity)
+    //if (nextCapacity > 0)
     {
         capacity = nextCapacity;
         TYPE *newArray = new TYPE[capacity];
@@ -204,7 +223,8 @@ void List<TYPE>::Insert(int index, TYPE item)
     }
 
     int nextCapacity = NextCapacity(++count);
-    if (nextCapacity > 0)
+    //if (nextCapacity > 0)
+    if (nextCapacity > capacity)
     {
         capacity = nextCapacity;
         TYPE *newArray = new TYPE[capacity];
@@ -246,7 +266,8 @@ void List<TYPE>::RemoveAt(int index)
     }
 
     int nextCapacity = NextCapacity(--count);
-    if (nextCapacity > 0)
+    //if (nextCapacity > 0)
+    if(nextCapacity > capacity)
     {
         capacity = nextCapacity;
 
@@ -290,6 +311,12 @@ int  List<TYPE>::LastIndexOf(TYPE item)
     }
 
     return -1;
+}
+
+template <typename TYPE>
+bool  List<TYPE>::Contains(TYPE item)
+{
+    return IndexOf(item) >= 0;
 }
 
 template <typename TYPE>
@@ -351,16 +378,19 @@ int List<TYPE>::SortHelperPartition(int l, int r, int(*comparison)(TYPE, TYPE))
     return i;
 }
 
+//
 //Comparisonについて:
-//  返り値:
-//      0より小さい:
-//          並び替え順序においてAはBの前
+// 各アイテムを比較するための関数を用意する必要がある.
 //
-//      0:
-//          並び替え順序においてAとBは同じ位置
+// @return 0より小さい:
+//  並び替え順序においてAはBの前
 //
-//      0より大きい:
-//          並び替え順序においてAはBの後ろ
+// @return 0:
+//  並び替え順序においてAとBは同じ位置
+//
+// @return 0より大きい:
+//  並び替え順序においてAはBの後ろ
+//
 template <typename TYPE>
 void List<TYPE>::Sort(int(*comparison)(TYPE, TYPE))
 {
@@ -414,81 +444,32 @@ void List<TYPE>::Sort(int(*comparison)(TYPE, TYPE))
     }
 }
 
-//y = log2(x)
-template <typename TYPE>
-int List<TYPE>::Log2(int x)
-{
-    int y = 0;
-    while (x > 1)
-    {
-        x >>= 1;
-        y++;
-    }
-    return y;
-}
-
-//y = 2^x
-template <typename TYPE>
-int List<TYPE>::Pow2(int x)
-{
-    int y = 0;
-    if (x == 0)
-    {
-        y = 1;
-    }
-    else
-    {
-        y = 2 << (x - 1);
-    }
-
-    return y;
-}
-
-//関数:
-//  説明:
-//      xの値からメモリの確保ステップ値を返します
-template <typename TYPE>
-int List<TYPE>::GetStep(int x)
-{
-    if (x == 0)
-    {
-        return 0;
-    }
-    else if (x == 1)
-    {
-        return 1;
-    }
-
-    return Log2(x);
-}
-
-//関数
-//  説明:
-//      指定された要素数に基づいてメモリを再確保するか判定します.
+//
+// 指定された要素数に対する設定すべき容量値を返します.
 //  
-//  返り値:
-//      確保されるべき要素数
+// @param nextCount:
+//  設定したいリストの要素数
+// 
+// @return:
+//  確保されるべき要素数
 //
 template <typename TYPE>
-int List<TYPE>::NextCapacity(int targetCount)
+int List<TYPE>::NextCapacity(int nextCount)
 {
-    int targetStep = GetStep(targetCount);
-    int nowStep = GetStep(capacity);
+    int pow = 0;
 
-    if (targetCount <= capacity)
+    while (nextCount > 0)
     {
-        return -1;
+        nextCount >>= 1;
+        pow++;
     }
 
-    int nextCapacity = 0;
-    if (targetStep == 0)
-    {
-        return 0;
+    int nextCapacity = (0x01) << pow;
 
-    }
-    else
+    // Capacityは最低4にする.
+    if (nextCapacity < 4)
     {
-        nextCapacity = Pow2(targetStep + 1);
+        nextCapacity = 4;
     }
 
     return nextCapacity;
