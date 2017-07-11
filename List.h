@@ -10,7 +10,7 @@ private:
     int capacity = 0;
     int count = 0;
 
-    int NextCapacity(int targetCount);
+    int NewCapacity(int targetCount);
 
     void Unallocate(TYPE *array);
 
@@ -142,12 +142,12 @@ List<TYPE>& List<TYPE>::operator=(List&& rList)
 template <typename TYPE>
 void List<TYPE>::CopyFrom(const List &from)
 {
-    int nextCapacity = NextCapacity(from.capacity);
+    int newCapacity = NewCapacity(from.count);
 
-    if (nextCapacity > capacity)
+    if (newCapacity > capacity)
     //if (nextCapacity > 0)
     {
-        capacity = nextCapacity;
+        capacity = newCapacity;
         Unallocate(array);
         array = new TYPE[capacity];
     }
@@ -199,12 +199,12 @@ void List<TYPE>::SetCapacity(int capacity)
 template <typename TYPE>
 void List<TYPE>::Add(TYPE item)
 {
-    int nextCapacity = NextCapacity(++count);
+    int newCapacity = NewCapacity(++count);
 
-    if (nextCapacity > capacity)
+    if (newCapacity > capacity)
     //if (nextCapacity > 0)
     {
-        capacity = nextCapacity;
+        capacity = newCapacity;
         TYPE *newArray = new TYPE[capacity];
         CopyTo(0, newArray, 0, count - 1);
         Unallocate(array);
@@ -222,11 +222,11 @@ void List<TYPE>::Insert(int index, TYPE item)
         return;
     }
 
-    int nextCapacity = NextCapacity(++count);
+    int newCapacity = NewCapacity(++count);
     //if (nextCapacity > 0)
-    if (nextCapacity > capacity)
+    if (newCapacity > capacity)
     {
-        capacity = nextCapacity;
+        capacity = newCapacity;
         TYPE *newArray = new TYPE[capacity];
         CopyTo(0, newArray, 0, index);
         CopyTo(index + 1, newArray, index, count - index);
@@ -265,11 +265,11 @@ void List<TYPE>::RemoveAt(int index)
         array[i - 1] = array[i];
     }
 
-    int nextCapacity = NextCapacity(--count);
+    int newCapacity = NewCapacity(--count);
     //if (nextCapacity > 0)
-    if(nextCapacity > capacity)
+    if(newCapacity > capacity)
     {
-        capacity = nextCapacity;
+        capacity = newCapacity;
 
         TYPE *newArray = new TYPE[capacity];
         CopyTo(0, newArray, 0, count);
@@ -446,33 +446,39 @@ void List<TYPE>::Sort(int(*comparison)(TYPE, TYPE))
 
 //
 // 指定された要素数に対する設定すべき容量値を返します.
+// 指定された要素数が現在の容量値を上回っていない場合は, 現在の容量値を返します.
+// 
 //  
 // @param nextCount:
 //  設定したいリストの要素数
 // 
 // @return:
-//  確保されるべき要素数
+//  確保されるべき容量値
+//  この値が現在の容量値を上回っている(より大きい)場合は新しくメモリを確保すべきです.
 //
 template <typename TYPE>
-int List<TYPE>::NextCapacity(int nextCount)
+int List<TYPE>::NewCapacity(int newCount)
 {
+    if(newCount <= capacity){
+        return capacity;
+    }
     int pow = 0;
 
-    while (nextCount > 0)
+    while (newCount > 0)
     {
-        nextCount >>= 1;
+        newCount >>= 1;
         pow++;
     }
 
-    int nextCapacity = (0x01) << pow;
+    int newCapacity = (0x01) << pow;
 
     // Capacityは最低4にする.
-    if (nextCapacity < 4)
+    if (newCapacity < 4)
     {
-        nextCapacity = 4;
+        newCapacity = 4;
     }
 
-    return nextCapacity;
+    return newCapacity;
 }
 
 template <typename TYPE>
